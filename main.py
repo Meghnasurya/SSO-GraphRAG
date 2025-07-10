@@ -15,6 +15,7 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends, Req
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 import google.generativeai as genai
 from neo4j import GraphDatabase
@@ -56,8 +57,8 @@ JIRA_PROJECT_KEY = os.getenv("JIRA_PROJECT_KEY")
 # OAuth credentials
 GITHUB_CLIENT_ID = os.getenv("GITHUB_CLIENT_ID")
 GITHUB_CLIENT_SECRET = os.getenv("GITHUB_CLIENT_SECRET")
-JIRA_OAUTH_CLIENT_ID = os.getenv("JIRA_OAUTH_CLIENT_ID")
-JIRA_OAUTH_CLIENT_SECRET = os.getenv("JIRA_OAUTH_CLIENT_SECRET")
+JIRA_OAUTH_CLIENT_ID = os.getenv("JIRA_CLIENT_ID")  # Using JIRA_CLIENT_ID from your .env
+JIRA_OAUTH_CLIENT_SECRET = os.getenv("JIRA_CLIENT_SECRET")  # Using JIRA_CLIENT_SECRET from your .env
 SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
 
 # Configure Gemini
@@ -377,16 +378,23 @@ class SessionManager:
             "jira_oauth": None,
             "selected_resources": None
         }
+        print(f"DEBUG: Created session {session_id} with data: {user_data}")
         
     def get_session(self, session_id: str) -> Optional[Dict[str, Any]]:
-        return self.sessions.get(session_id)
+        session = self.sessions.get(session_id)
+        print(f"DEBUG: Retrieved session {session_id}: {session}")
+        return session
         
     def update_session(self, session_id: str, updates: Dict[str, Any]):
         if session_id in self.sessions:
             self.sessions[session_id].update(updates)
+            print(f"DEBUG: Updated session {session_id} with: {updates}")
+        else:
+            print(f"DEBUG: Session {session_id} not found for update")
             
     def delete_session(self, session_id: str):
-        self.sessions.pop(session_id, None)
+        removed = self.sessions.pop(session_id, None)
+        print(f"DEBUG: Deleted session {session_id}: {removed is not None}")
 
 
 class GraphRAGNeo4j:
@@ -2231,6 +2239,15 @@ class TestSuite(unittest.TestCase):
 
 app = FastAPI(title="Agentic RAG Test Generator", description="AI-powered test case generation system")
 
+# Add CORS middleware to allow frontend-backend communication
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 # Initialize OAuth services and session manager
 github_oauth = GitHubOAuthService()
 jira_oauth = JiraOAuthService()
@@ -2261,6 +2278,11 @@ async def github_auth(request: Request):
     
     auth_url = github_oauth.get_authorization_url(redirect_uri, state)
     
+    print(f"DEBUG: GitHub auth - session_id: {session_id}")
+    print(f"DEBUG: GitHub auth - state: {state}")
+    print(f"DEBUG: GitHub auth - redirect_uri: {redirect_uri}")
+    print(f"DEBUG: GitHub auth - auth_url: {auth_url}")
+    
     response = RedirectResponse(url=auth_url)
     response.set_cookie("session_id", session_id, httponly=True, max_age=3600)
     return response
@@ -2268,9 +2290,24 @@ async def github_auth(request: Request):
 @app.get("/auth/github/callback")
 async def github_callback(request: Request, code: str, state: str):
     """Handle GitHub OAuth callback"""
+    session_id = request.cookies.get("session_id")
     session = get_current_session(request)
-    if not session or session.get("oauth_state") != state:
-        raise HTTPException(status_code=400, detail="Invalid state parameter")
+    
+    # Debug logging
+    print(f"DEBUG: GitHub callback - session_id: {session_id}")
+    print(f"DEBUG: GitHub callback - state received: {state}")
+    print(f"DEBUG: GitHub callback - session: {session}")
+    
+    if not session:
+        print("DEBUG: No session found")
+        raise HTTPException(status_code=400, detail="No session found. Please try signing in again.")
+    
+    stored_state = session.get("oauth_state")
+    print(f"DEBUG: Stored state: {stored_state}")
+    
+    if stored_state != state:
+        print(f"DEBUG: State mismatch - stored: {stored_state}, received: {state}")
+        raise HTTPException(status_code=400, detail=f"Invalid state parameter. Expected: {stored_state}, Got: {state}")
     
     try:
         redirect_uri = str(request.url_for("github_callback"))
@@ -2293,6 +2330,7 @@ async def github_callback(request: Request, code: str, state: str):
         return RedirectResponse(url="/repositories")
         
     except Exception as e:
+        print(f"DEBUG: OAuth error: {str(e)}")
         raise HTTPException(status_code=400, detail=f"OAuth error: {str(e)}")
 
 @app.get("/auth/jira")
@@ -2691,7 +2729,23 @@ async def index():
     try:
         with open("templates/index.html", "r", encoding="utf-8") as f:
             return HTMLResponse(content=f.read())
-    except FileNotFoundError:        return HTMLResponse(content="<h1>Welcome to Agentic RAG Test Generator</h1><p>Please ensure templates/index.html exists.</p>")
+    except FileNotFoundError:
+        return HTMLResponse(content="<h1>Welcome to Agentic RAG Test Generator</h1><p>Please ensure templates/index.html exists.</p>")
+
+
+@app.post("/auth/logout")
+async def logout(request: Request, response: Response):
+    """Logout user and clear session"""
+    session_id = request.cookies.get("session_id")
+    
+    if session_id:
+        session_manager.delete_session(session_id)
+        response.delete_cookie("session_id")
+    
+    return JSONResponse(content={
+        "status": "success",
+        "message": "Logged out successfully"
+    })
 
 
 @app.get("/auth/status")
@@ -2709,12 +2763,45 @@ async def auth_status(request: Request):
     github_data = session.get("github_oauth")
     jira_data = session.get("jira_oauth")
     
-    return JSONResponse(content={
-        "authenticated": True,
+    # Determine which provider is active and return user info
+    user_info = None
+    provider = None
+    
+    if github_data and github_data.get("user_info"):
+        user_info = github_data["user_info"]
+        provider = "github"
+    elif jira_data and jira_data.get("user_info"):
+        user_info = jira_data["user_info"] 
+        provider = "jira"
+    
+    response = {
+        "authenticated": bool(github_data or jira_data),
         "github_authenticated": bool(github_data),
-        "github_user": github_data.get("user_info", {}).get("login") if github_data else None,
-        "jira_authenticated": bool(jira_data),
-        "jira_resources": len(jira_data.get("resources", [])) if jira_data else 0
+        "jira_authenticated": bool(jira_data)
+    }
+    
+    if user_info:
+        response["user"] = {
+            "name": user_info.get("name") or user_info.get("displayName"),
+            "login": user_info.get("login") or user_info.get("accountId"),
+            "email": user_info.get("email"),
+            "provider": provider
+        }
+    
+    return JSONResponse(content=response)
+
+
+@app.get("/debug/session")
+async def debug_session(request: Request):
+    """Debug endpoint to check session state"""
+    session_id = request.cookies.get("session_id")
+    session = get_current_session(request)
+    
+    return JSONResponse(content={
+        "session_id": session_id,
+        "session_exists": session is not None,
+        "session_data": session if session else None,
+        "all_sessions": list(session_manager.sessions.keys())
     })
 
 
@@ -3235,4 +3322,5 @@ async def get_data_status():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=5005, reload=True)
+    # Updated to pick up new GitHub Client ID: Ov23liYjNRVs3tAQ36oa
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)

@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Test Generator - Frontend</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 15px 30px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .sso-buttons {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .sso-btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .github-btn {
+            background: #333;
+        }
+
+        .github-btn:hover {
+            background: #555;
+            transform: translateY(-2px);
+        }
+
+        .jira-btn {
+            background: #0052cc;
+        }
+
+        .jira-btn:hover {
+            background: #0065ff;
+            transform: translateY(-2px);
+        }
+
+        .auth-status {
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .auth-status.authenticated {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .auth-status.not-authenticated {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .repo-list, .project-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .repo-item, .project-item {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .repo-item:hover, .project-item:hover {
+            background: #f5f5f5;
+        }
+
+        .repo-item:last-child, .project-item:last-child {
+            border-bottom: none;
+        }
+
+        .action-btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 5px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .status-message {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .selected {
+            background: #e3f2fd !important;
+            border-left: 4px solid #2196f3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 RAG Test Generator</h1>
+            <p>Authenticate with GitHub or Jira to generate intelligent test cases</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('sso')">🔐 Authentication</button>
+            <button class="tab" onclick="showTab('repositories')">📁 Repositories</button>
+            <button class="tab" onclick="showTab('projects')">📋 Projects</button>
+            <button class="tab" onclick="showTab('generate')">⚡ Generate</button>
+        </div>
+
+        <!-- SSO Tab -->
+        <div id="sso" class="tab-content active">
+            <div id="auth-status" class="auth-status not-authenticated">
+                <strong>Not Authenticated</strong><br>
+                Please sign in with GitHub or Jira to continue
+            </div>            <div class="sso-buttons">
+                <a href="#" class="sso-btn github-btn" onclick="authenticateGitHub()">
+                    <span>🐙</span> Sign in with GitHub
+                </a>
+                <a href="#" class="sso-btn jira-btn" onclick="authenticateJira()">
+                    <span>🔶</span> Sign in with Jira
+                </a>
+            </div>
+
+            <div id="jira-config" style="display: none; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                <h4>Jira Configuration</h4>
+                <label for="jira-instance">Jira Instance URL:</label>
+                <input type="url" id="jira-instance" value="https://wipro-team-wapte.atlassian.net" 
+                       style="width: 100%; padding: 8px; margin: 5px 0; border: 1px solid #ddd; border-radius: 5px;">
+                <button onclick="proceedWithJiraAuth()" class="action-btn" style="margin-top: 10px;">
+                    Continue with Jira
+                </button>
+                <button onclick="cancelJiraAuth()" class="action-btn" style="background: #6c757d; margin-top: 10px;">
+                    Cancel
+                </button>
+            </div>
+
+            <div id="user-info" style="display: none; text-align: center; padding: 20px; background: #f8f9fa; border-radius: 10px;">
+                <h3>User Information</h3>
+                <div id="user-details"></div>
+                <button class="action-btn" onclick="logout()" style="background: #dc3545; margin-top: 15px;">Logout</button>
+            </div>
+        </div>
+
+        <!-- Repositories Tab -->
+        <div id="repositories" class="tab-content">
+            <h3>GitHub Repositories</h3>
+            <div id="repo-loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading repositories...</p>
+            </div>
+            <div id="repo-list" class="repo-list"></div>
+            <button class="action-btn" onclick="createEmbeddings('github')" id="create-repo-embeddings" disabled>
+                Create Embeddings from Selected Repository
+            </button>
+        </div>
+
+        <!-- Projects Tab -->
+        <div id="projects" class="tab-content">
+            <h3>Jira Projects</h3>
+            <div id="project-loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Loading projects...</p>
+            </div>
+            <div id="project-list" class="project-list"></div>
+            <button class="action-btn" onclick="createEmbeddings('jira')" id="create-project-embeddings" disabled>
+                Create Embeddings from Selected Project
+            </button>
+        </div>
+
+        <!-- Generate Tab -->
+        <div id="generate" class="tab-content">
+            <h3>Generate Test Cases</h3>
+            <div id="data-status" class="status-message warning">
+                <strong>No Data Available</strong><br>
+                Please create embeddings from repositories or projects first
+            </div>
+            <button class="action-btn" onclick="checkDataStatus()">Check Data Status</button>
+            <button class="action-btn" onclick="generateTests()" id="generate-btn" disabled>Generate Test Cases</button>
+        </div>
+
+        <div id="status-messages"></div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8000';
+        let selectedRepo = null;
+        let selectedProject = null;
+        let currentUser = null;
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+            
+            // Check for OAuth callback
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('code')) {
+                showMessage('OAuth callback received. Checking authentication status...', 'success');
+                setTimeout(checkAuthStatus, 1000);
+            }
+        });
+
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+            
+            // Load data for specific tabs
+            if (tabName === 'repositories' && currentUser && currentUser.provider === 'github') {
+                loadRepositories();
+            } else if (tabName === 'projects' && currentUser && currentUser.provider === 'jira') {
+                loadProjects();
+            } else if (tabName === 'generate') {
+                checkDataStatus();
+            }
+        }
+
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/status`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                if (data.authenticated) {
+                    currentUser = data.user;
+                    updateAuthStatus(true, data.user);
+                } else {
+                    currentUser = null;
+                    updateAuthStatus(false);
+                }
+            } catch (error) {
+                console.error('Error checking auth status:', error);
+                showMessage('Error checking authentication status', 'error');
+            }
+        }
+
+        function updateAuthStatus(authenticated, user = null) {
+            const statusDiv = document.getElementById('auth-status');
+            const userInfoDiv = document.getElementById('user-info');
+            
+            if (authenticated && user) {
+                statusDiv.className = 'auth-status authenticated';
+                statusDiv.innerHTML = `<strong>Authenticated</strong><br>Signed in as ${user.name || user.login} via ${user.provider}`;
+                
+                const userDetailsDiv = document.getElementById('user-details');
+                userDetailsDiv.innerHTML = `
+                    <p><strong>Name:</strong> ${user.name || 'N/A'}</p>
+                    <p><strong>Username:</strong> ${user.login}</p>
+                    <p><strong>Provider:</strong> ${user.provider}</p>
+                    <p><strong>Email:</strong> ${user.email || 'N/A'}</p>
+                `;
+                userInfoDiv.style.display = 'block';
+            } else {
+                statusDiv.className = 'auth-status not-authenticated';
+                statusDiv.innerHTML = '<strong>Not Authenticated</strong><br>Please sign in with GitHub or Jira to continue';
+                userInfoDiv.style.display = 'none';
+            }
+        }
+
+        function authenticateGitHub() {
+            window.location.href = `${API_BASE_URL}/auth/github`;
+        }        function authenticateJira() {
+            // Show Jira configuration form
+            document.getElementById('jira-config').style.display = 'block';
+        }
+
+        function proceedWithJiraAuth() {
+            const jiraInstance = document.getElementById('jira-instance').value.trim();
+            
+            if (!jiraInstance) {
+                showMessage('Please enter a Jira instance URL', 'error');
+                return;
+            }
+            
+            // Validate URL format
+            try {
+                new URL(jiraInstance);
+            } catch (e) {
+                showMessage('Please enter a valid URL (e.g., https://your-company.atlassian.net)', 'error');
+                return;
+            }
+            
+            window.location.href = `${API_BASE_URL}/auth/jira?instance=${encodeURIComponent(jiraInstance)}`;
+        }
+
+        function cancelJiraAuth() {
+            document.getElementById('jira-config').style.display = 'none';
+        }
+
+        async function logout() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/auth/logout`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    currentUser = null;
+                    updateAuthStatus(false);
+                    showMessage('Logged out successfully', 'success');
+                    showTab('sso');
+                }
+            } catch (error) {
+                console.error('Error logging out:', error);
+                showMessage('Error logging out', 'error');
+            }
+        }
+
+        async function loadRepositories() {
+            if (!currentUser || currentUser.provider !== 'github') {
+                showMessage('Please authenticate with GitHub first', 'warning');
+                return;
+            }
+
+            const loadingDiv = document.getElementById('repo-loading');
+            const listDiv = document.getElementById('repo-list');
+            
+            loadingDiv.style.display = 'block';
+            listDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/repositories`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                loadingDiv.style.display = 'none';
+                
+                if (data.repositories && data.repositories.length > 0) {
+                    listDiv.innerHTML = data.repositories.map(repo => `
+                        <div class="repo-item" onclick="selectRepository('${repo.full_name}', '${repo.name}')">
+                            <strong>${repo.name}</strong><br>
+                            <small>${repo.description || 'No description'}</small><br>
+                            <small>⭐ ${repo.stargazers_count} | 🍴 ${repo.forks_count}</small>
+                        </div>
+                    `).join('');
+                } else {
+                    listDiv.innerHTML = '<p>No repositories found</p>';
+                }
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                console.error('Error loading repositories:', error);
+                showMessage('Error loading repositories', 'error');
+            }
+        }
+
+        async function loadProjects() {
+            if (!currentUser || currentUser.provider !== 'jira') {
+                showMessage('Please authenticate with Jira first', 'warning');
+                return;
+            }
+
+            const loadingDiv = document.getElementById('project-loading');
+            const listDiv = document.getElementById('project-list');
+            
+            loadingDiv.style.display = 'block';
+            listDiv.innerHTML = '';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/projects`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                loadingDiv.style.display = 'none';
+                
+                if (data.projects && data.projects.length > 0) {
+                    listDiv.innerHTML = data.projects.map(project => `
+                        <div class="project-item" onclick="selectProject('${project.key}', '${project.name}')">
+                            <strong>${project.name}</strong> (${project.key})<br>
+                            <small>${project.description || 'No description'}</small><br>
+                            <small>Type: ${project.projectTypeKey}</small>
+                        </div>
+                    `).join('');
+                } else {
+                    listDiv.innerHTML = '<p>No projects found</p>';
+                }
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                console.error('Error loading projects:', error);
+                showMessage('Error loading projects', 'error');
+            }
+        }
+
+        function selectRepository(fullName, name) {
+            selectedRepo = { fullName, name };
+            
+            // Update UI
+            document.querySelectorAll('.repo-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            document.getElementById('create-repo-embeddings').disabled = false;
+            showMessage(`Selected repository: ${name}`, 'success');
+        }
+
+        function selectProject(key, name) {
+            selectedProject = { key, name };
+            
+            // Update UI
+            document.querySelectorAll('.project-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            event.target.classList.add('selected');
+            
+            document.getElementById('create-project-embeddings').disabled = false;
+            showMessage(`Selected project: ${name}`, 'success');
+        }
+
+        async function createEmbeddings(type) {
+            const selection = type === 'github' ? selectedRepo : selectedProject;
+            if (!selection) {
+                showMessage(`Please select a ${type === 'github' ? 'repository' : 'project'} first`, 'warning');
+                return;
+            }
+
+            const endpoint = type === 'github' ? '/populate-github-data' : '/populate-jira-data';
+            const payload = type === 'github' 
+                ? { repository: selection.fullName }
+                : { project_key: selection.key };
+
+            try {
+                showMessage(`Creating embeddings for ${selection.name}...`, 'warning');
+                
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+                
+                if (response.ok) {
+                    showMessage(`Successfully created embeddings for ${selection.name}!`, 'success');
+                    checkDataStatus(); // Refresh data status
+                } else {
+                    showMessage(`Error creating embeddings: ${data.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error creating embeddings:', error);
+                showMessage('Error creating embeddings', 'error');
+            }
+        }
+
+        async function checkDataStatus() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/data-status`, {
+                    credentials: 'include'
+                });
+                const data = await response.json();
+                
+                const statusDiv = document.getElementById('data-status');
+                const generateBtn = document.getElementById('generate-btn');
+                
+                if (data.embeddings_available || data.graph_available) {
+                    statusDiv.className = 'status-message success';
+                    statusDiv.innerHTML = `
+                        <strong>Data Available</strong><br>
+                        Embeddings: ${data.embeddings_count} | Graph Nodes: ${data.graph_nodes}
+                    `;
+                    generateBtn.disabled = false;
+                } else {
+                    statusDiv.className = 'status-message warning';
+                    statusDiv.innerHTML = `
+                        <strong>No Data Available</strong><br>
+                        Please create embeddings from repositories or projects first
+                    `;
+                    generateBtn.disabled = true;
+                }
+            } catch (error) {
+                console.error('Error checking data status:', error);
+                showMessage('Error checking data status', 'error');
+            }
+        }
+
+        function generateTests() {
+            // This would typically open a form for test case generation
+            // For now, we'll just show a message
+            showMessage('Test generation interface coming soon! Data is ready.', 'success');
+        }
+
+        function showMessage(message, type) {
+            const messagesDiv = document.getElementById('status-messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `status-message ${type}`;
+            messageDiv.textContent = message;
+            
+            messagesDiv.appendChild(messageDiv);
+            
+            // Remove message after 5 seconds
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
