@@ -1,0 +1,792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agentic RAG Test Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+            font-weight: 600;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .file-upload {
+            border: 2px dashed #e0e0e0;
+            border-radius: 10px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+
+        .file-upload.dragover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload input {
+            display: none;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f8f9ff;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+            display: none;
+        }
+
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .error {
+            background: #fff5f5;
+            border-left-color: #f56565;
+            color: #c53030;
+        }
+
+        .api-section {
+            background: #f8f9ff;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .api-section h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .endpoint {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .method {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+
+        .method.get { background: #48bb78; color: white; }
+        .method.post { background: #4299e1; color: white; }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+            }
+
+            .tab {
+                border-bottom: 1px solid #e0e0e0;
+                border-right: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 Agentic RAG Test Generator</h1>
+            <p>AI-powered test case generation with intelligent analysis</p>
+        </div>        <div class="tabs">
+            <button class="tab active" onclick="showTab('generate')">Generate Tests</button>
+            <button class="tab" onclick="showTab('agentic')">Smart Test Check</button>
+            <button class="tab" onclick="showTab('jira')">Jira Integration</button>
+            <button class="tab" onclick="showTab('sso')">SSO Setup</button>
+            <button class="tab" onclick="showTab('api')">API Documentation</button>
+        </div>
+
+        <!-- Generate Tests Tab -->
+        <div id="generate" class="tab-content active">
+            <form id="generateForm" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="requirements">📝 Requirements Description</label>
+                    <textarea id="requirements" name="requirements" placeholder="Describe the functionality you want to test..." required></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="documents">📁 Documentation (ZIP file)</label>
+                    <div class="file-upload" onclick="document.getElementById('documents').click()">
+                        <div class="upload-icon">📁</div>
+                        <p>Click to upload or drag and drop your ZIP file here</p>
+                        <small>Upload documentation, code files, or related materials</small>
+                        <input type="file" id="documents" name="documents" accept=".zip" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn">🚀 Generate Test Cases</button>
+            </form>
+        </div>
+
+        <!-- Smart Test Check Tab -->
+        <div id="agentic" class="tab-content">
+            <form id="agenticForm">
+                <div class="form-group">
+                    <label for="functionality">🎯 Functionality Description</label>
+                    <textarea id="functionality" name="functionality" placeholder="Describe the functionality you want to check for test coverage..." required></textarea>
+                </div>
+
+                <button type="submit" class="btn">🔍 Check Test Coverage</button>
+            </form>
+        </div>        <!-- Jira Integration Tab -->
+        <div id="jira" class="tab-content">
+            <h3 style="margin-bottom: 20px; color: #333;">🔗 Jira Integration</h3>
+            <p style="margin-bottom: 25px; color: #666; line-height: 1.6;">
+                Fetch test cases from Jira/Xray and automatically create embeddings and knowledge graph entries 
+                for intelligent test analysis. Data will be stored in existing collections.
+            </p>
+            
+            <div class="form-group">
+                <button onclick="populateJiraData()" class="btn">🔗 Fetch Tests & Create Data</button>
+                <small style="display: block; margin-top: 5px; color: #666;">
+                    Fetch test cases from Jira/Xray, create embeddings and knowledge graph, and store in existing data
+                </small>
+            </div>
+        </div><!-- SSO Setup Tab -->
+        <div id="sso" class="tab-content">
+            <h3 style="margin-bottom: 20px; color: #333;">🔐 Single Sign-On Setup</h3>
+            <p style="margin-bottom: 25px; color: #666; line-height: 1.6;">
+                Connect your GitHub and Jira accounts to automatically import repositories and projects 
+                for intelligent test analysis. Data will be processed to create embeddings and knowledge graph entries.
+            </p>
+            
+            <div class="sso-section" style="background: #f8f9ff; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h4 style="color: #667eea; margin-bottom: 15px;">🐙 GitHub Integration</h4>
+                <p style="margin-bottom: 15px; color: #666;">
+                    Connect to GitHub to access your repositories and automatically analyze code, documentation, and test files.
+                </p>
+                <button onclick="connectGitHub()" class="btn" style="width: auto; margin-right: 10px;">
+                    🔗 Connect GitHub Account
+                </button>
+                <span id="github-status" style="color: #666; font-size: 0.9rem;"></span>
+            </div>
+            
+            <div class="sso-section" style="background: #f8f9ff; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h4 style="color: #667eea; margin-bottom: 15px;">🔷 Jira Integration</h4>
+                <p style="margin-bottom: 15px; color: #666;">
+                    Connect to Jira/Atlassian to access your projects and automatically analyze test cases and documentation.
+                </p>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label for="jira-instance">Jira Instance URL</label>
+                    <input type="url" id="jira-instance" placeholder="https://your-company.atlassian.net" 
+                           style="margin-bottom: 10px;">
+                </div>
+                <button onclick="connectJira()" class="btn" style="width: auto; margin-right: 10px;">
+                    🔗 Connect Jira Account
+                </button>
+                <span id="jira-status" style="color: #666; font-size: 0.9rem;"></span>
+            </div>
+            
+            <div class="sso-section" style="background: #e8f5e8; padding: 20px; border-radius: 10px;">
+                <h4 style="color: #28a745; margin-bottom: 15px;">📊 Data Processing</h4>
+                <p style="margin-bottom: 15px; color: #666;">
+                    After connecting your accounts, you'll be able to:
+                </p>
+                <ul style="margin-left: 20px; margin-bottom: 15px; color: #666;">
+                    <li>Select specific repositories and projects to analyze</li>
+                    <li>Automatically create embeddings from code and documentation</li>
+                    <li>Build knowledge graphs connecting tests, code, and requirements</li>
+                    <li>Use intelligent test coverage analysis</li>
+                </ul>
+                <div id="processing-status" style="display: none; margin-top: 15px;">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Processing your selected resources...</p>
+                    </div>
+                </div>
+            </div>
+        </div><!-- API Documentation Tab -->
+        <div id="api" class="tab-content">
+            <div class="api-section">
+                <h3>Available Endpoints</h3>
+                
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <strong>/generate</strong>
+                    <p>Generate test cases from requirements and documentation</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <strong>/agentic-test-check</strong>
+                    <p>Intelligent test coverage analysis (read-only, checks existing data)</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <strong>/data-status</strong>
+                    <p>Check current status of embeddings and graph data</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <strong>/populate-jira-data</strong>
+                    <p>Manually populate data from Jira/Xray (creates embeddings/graph)</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <strong>/fetch-jira-tests</strong>
+                    <p>Legacy: Fetch test cases from Jira/Xray</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method post">POST</span>
+                    <strong>/populate-sample-data</strong>
+                    <p>Populate sample test data for development</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <strong>/get-all-test-summary</strong>
+                    <p>Get comprehensive test summary</p>
+                </div>
+
+                <div class="endpoint">
+                    <span class="method get">GET</span>
+                    <strong>/docs</strong>
+                    <p>Interactive API documentation (Swagger UI)</p>
+                </div>
+            </div>
+            
+            <div class="api-section">
+                <h3>🔍 Agentic RAG Behavior</h3>
+                <p><strong>Important:</strong> The agentic RAG system now operates in <em>read-only mode</em> by default:</p>
+                <ul style="margin-left: 20px; margin-top: 10px;">
+                    <li>✅ <strong>/agentic-test-check</strong> only reads existing embeddings and graph data</li>
+                    <li>❌ It does NOT create new embeddings or graph entries automatically</li>
+                    <li>🔧 Use <strong>/populate-jira-data</strong> to explicitly populate data when needed</li>
+                    <li>📊 Use <strong>/data-status</strong> to check what data is currently available</li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Processing your request...</p>
+        </div>
+
+        <div class="result" id="result">
+            <h3>Results</h3>
+            <pre id="resultContent"></pre>
+        </div>
+    </div>
+
+    <script>
+        function showTab(tabName) {
+            // Hide all tab contents
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+
+            // Remove active class from all tabs
+            const tabs = document.querySelectorAll('.tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
+
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+
+        function showResult(content, isError = false) {
+            const resultDiv = document.getElementById('result');
+            const resultContent = document.getElementById('resultContent');
+            
+            resultContent.textContent = content;
+            resultDiv.classList.toggle('error', isError);
+            resultDiv.style.display = 'block';
+            
+            hideLoading();
+        }
+
+        // Generate Tests Form
+        document.getElementById('generateForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            const formData = new FormData(e.target);
+
+            try {
+                const response = await fetch('/generate', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showResult(data.result);
+                } else {
+                    showResult(`Error: ${data.detail || 'Unknown error'}`, true);
+                }
+            } catch (error) {
+                showResult(`Network Error: ${error.message}`, true);
+            }
+        });
+
+        // Agentic Test Check Form
+        document.getElementById('agenticForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            showLoading();
+
+            const functionality = document.getElementById('functionality').value;
+
+            try {
+                const response = await fetch('/agentic-test-check', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        functionality: functionality
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let resultText = `Action: ${data.action}\n`;
+                    resultText += `Status: ${data.status}\n`;
+                    resultText += `Message: ${data.message}\n`;
+                    resultText += `Summary: ${data.summary}\n\n`;                    if (data.action === 'NO_DATA') {
+                        resultText += `⚠️ No existing data found.\n`;
+                        resultText += `Data Status:\n`;
+                        if (data.data_status) {
+                            resultText += `- Embeddings: ${data.data_status.embedding_count || 0}\n`;
+                            resultText += `- Graph Nodes: ${data.data_status.graph_node_count || 0}\n`;
+                        }
+                        resultText += `\nRecommendations:\n`;
+                        if (data.recommendations) {
+                            data.recommendations.forEach((rec, index) => {
+                                resultText += `${index + 1}. ${rec}\n`;
+                            });
+                        }                    } else if (data.action === 'FUNCTION_NOT_FOUND') {
+                        resultText += `❌ Function not found in documentation.\n`;
+                        resultText += `Function Name: ${data.function_name || 'Not detected'}\n`;
+                        resultText += `Exists in Documentation: ${data.exists_in_docs ? 'Yes' : 'No'}\n`;
+                        resultText += `Exists in Test Embeddings: ${data.exists_in_tests ? 'Yes' : 'No'}\n`;
+                        resultText += `Exists in Knowledge Graph: ${data.exists_in_graph ? 'Yes' : 'No'}\n`;
+                        
+                        if (data.doc_search_results && data.doc_search_results.length > 0) {
+                            resultText += `\nDocumentation Search Results:\n`;
+                            data.doc_search_results.forEach((result, index) => {
+                                resultText += `${index + 1}. Pattern: ${result.pattern}\n`;
+                                resultText += `   Content: ${result.content}\n`;
+                            });
+                        }
+                        
+                        if (data.test_search_results && data.test_search_results.length > 0) {
+                            resultText += `\nTest Search Results:\n`;
+                            data.test_search_results.forEach((result, index) => {
+                                resultText += `${index + 1}. Pattern: ${result.pattern}\n`;
+                                resultText += `   Content: ${result.content}\n`;
+                            });
+                        }
+                        
+                        if (data.graph_search_results && data.graph_search_results.length > 0) {
+                            resultText += `\nKnowledge Graph Search Results:\n`;
+                            data.graph_search_results.forEach((result, index) => {
+                                resultText += `${index + 1}. Type: ${result.query_type}\n`;
+                                resultText += `   Name: ${result.name}\n`;
+                                if (result.labels && result.labels.length > 0) {
+                                    resultText += `   Labels: ${result.labels.join(', ')}\n`;
+                                }
+                            });
+                        }
+                        
+                        resultText += `\nRecommendations:\n`;
+                        if (data.recommendations) {
+                            data.recommendations.forEach((rec, index) => {
+                                resultText += `${index + 1}. ${rec}\n`;
+                            });
+                        }
+                    } else if (data.action === 'EXISTING' && data.existing_tests) {
+                        resultText += `Existing Tests Found:\n`;
+                        data.existing_tests.forEach((test, index) => {
+                            resultText += `\n${index + 1}. ${test.substring(0, 200)}...\n`;                        });
+                        if (data.data_status) {
+                            resultText += `\nData Status: ${data.data_status.embedding_count || 0} embeddings, ${data.data_status.graph_node_count || 0} graph nodes\n`;
+                        }
+                        
+                        // Show function information if available
+                        if (data.function_name) {
+                            resultText += `\nFunction: ${data.function_name}\n`;
+                            resultText += `Exists in Documentation: ${data.exists_in_docs ? 'Yes' : 'No'}\n`;
+                            resultText += `Exists in Test Embeddings: ${data.exists_in_tests ? 'Yes' : 'No'}\n`;
+                        }
+                    } else if (data.action === 'NO_TESTS_FOUND') {
+                        resultText += `Function Found but No Tests:\n`;
+                        resultText += `Function Name: ${data.function_name || 'Not detected'}\n`;
+                        resultText += `Exists in Documentation: ${data.exists_in_docs ? 'Yes' : 'No'}\n`;
+                        resultText += `Exists in Test Embeddings: ${data.exists_in_tests ? 'Yes' : 'No'}\n`;
+                        
+                        if (data.doc_search_results && data.doc_search_results.length > 0) {
+                            resultText += `\nDocumentation Found:\n`;
+                            data.doc_search_results.forEach((result, index) => {
+                                resultText += `${index + 1}. ${result.content}\n`;
+                            });
+                        }
+                        
+                        resultText += `\nRecommendations:\n`;
+                        if (data.recommendations) {
+                            data.recommendations.forEach((rec, index) => {
+                                resultText += `${index + 1}. ${rec}\n`;
+                            });
+                        }
+                    } else if (data.action === 'FUNCTIONALITY_NOT_DOCUMENTED') {
+                        resultText += `❌ Functionality Not Documented\n\n`;
+                        resultText += `The requested functionality was not found in documentation embeddings.\n`;
+                        resultText += `Test cases cannot be created or updated without proper documentation.\n\n`;
+                        if (data.recommendations && data.recommendations.length > 0) {
+                            resultText += `Recommendations:\n`;
+                            data.recommendations.forEach((rec, index) => {
+                                resultText += `${index + 1}. ${rec}\n`;
+                            });
+                        }
+                    } else if (data.action === 'UPDATE_BLOCKED') {
+                        resultText += `⚠️ Test Updates Blocked\n\n`;
+                        resultText += `Test updates have been blocked due to insufficient documentation.\n`;
+                        if (data.existing_tests && data.existing_tests.length > 0) {
+                            resultText += `\nFound ${data.existing_tests.length} existing test(s) but updates require clear documentation:\n`;
+                            data.existing_tests.slice(0, 3).forEach((test, index) => {
+                                resultText += `\n${index + 1}. ${test.substring(0, 200)}...\n`;
+                            });
+                        }
+                        if (data.recommendations && data.recommendations.length > 0) {
+                            resultText += `\nRecommendations:\n`;
+                            data.recommendations.forEach((rec, index) => {
+                                resultText += `${index + 1}. ${rec}\n`;
+                            });
+                        }
+                    } else if (data.action === 'CREATION_BLOCKED') {
+                        resultText += `🚫 Test Creation Blocked\n\n`;
+                        resultText += `Test creation has been blocked due to insufficient documentation.\n`;
+                        if (data.existing_tests && data.existing_tests.length > 0) {
+                            resultText += `\nFound ${data.existing_tests.length} existing test(s) but creation requires specific function documentation:\n`;
+                            data.existing_tests.slice(0, 3).forEach((test, index) => {
+                                resultText += `\n${index + 1}. ${test.substring(0, 200)}...\n`;
+                            });
+                        }
+                        if (data.recommendations && data.recommendations.length > 0) {
+                            resultText += `\nRecommendations:\n`;
+                            data.recommendations.forEach((rec, index) => {
+                                resultText += `${index + 1}. ${rec}\n`;
+                            });
+                        }
+                    } else if (data.action === 'UPDATED' && data.updated_test_cases) {
+                        resultText += `Updated Test Cases:\n`;
+                        data.updated_test_cases.forEach((test, index) => {
+                            resultText += `\n${index + 1}. ${test}\n`;
+                        });
+                        if (data.update_rationale) {
+                            resultText += `\nUpdate Rationale: ${data.update_rationale}\n`;
+                        }
+                    } else if (data.action === 'CREATED' && data.new_test_cases) {
+                        resultText += `New Test Cases Created:\n`;
+                        data.new_test_cases.forEach((test, index) => {
+                            resultText += `\n${index + 1}. ${test}\n`;
+                        });
+                    }
+
+                    showResult(resultText);
+                } else {
+                    showResult(`Error: ${data.detail || 'Unknown error'}`, true);
+                }
+            } catch (error) {
+                showResult(`Network Error: ${error.message}`, true);
+            }
+        });        // Jira Functions
+        async function populateJiraData() {
+            showLoading();
+
+            try {
+                const response = await fetch('/populate-jira-data', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({})
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    let resultText = `Jira Data Population Results:\n`;
+                    resultText += `Status: ${data.status}\n`;
+                    resultText += `Message: ${data.message}\n`;
+                    
+                    if (data.populated_count !== undefined) {
+                        resultText += `Populated Count: ${data.populated_count}\n`;
+                    }
+                    
+                    if (data.data_status) {
+                        resultText += `\nData Status After Population:\n`;
+                        resultText += `- Embeddings: ${data.embeddings_count || 0}\n`;
+                        resultText += `- Graph Nodes: ${data.graph_nodes || 0}\n`;
+                    }
+
+                    showResult(resultText);
+                } else {
+                    showResult(`Error: ${data.detail || 'Unknown error'}`, true);
+                }
+            } catch (error) {
+                showResult(`Network Error: ${error.message}`, true);
+            }
+        }        // SSO Functions
+        function connectGitHub() {
+            document.getElementById('github-status').textContent = 'Redirecting to GitHub...';
+            window.location.href = '/auth/github';
+        }
+        
+        function connectJira() {
+            const instanceUrl = document.getElementById('jira-instance').value;
+            if (!instanceUrl) {
+                alert('Please enter your Jira instance URL');
+                return;
+            }
+            
+            document.getElementById('jira-status').textContent = 'Redirecting to Jira...';
+            window.location.href = `/auth/jira?instance=${encodeURIComponent(instanceUrl)}`;
+        }
+        
+        // Check authentication status on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            checkAuthStatus();
+        });
+        
+        async function checkAuthStatus() {
+            try {
+                const response = await fetch('/auth/status', {
+                    method: 'GET',
+                    credentials: 'include'
+                });
+                
+                if (response.ok) {
+                    const authData = await response.json();
+                    
+                    if (authData.github_authenticated) {
+                        document.getElementById('github-status').innerHTML = 
+                            `✅ Connected as ${authData.github_user} | <a href="/repositories" style="color: #667eea;">Manage Repositories</a>`;
+                    }
+                    
+                    if (authData.jira_authenticated) {
+                        document.getElementById('jira-status').innerHTML = 
+                            `✅ Connected to Jira | <a href="/projects" style="color: #667eea;">Manage Projects</a>`;
+                    }
+                }
+            } catch (error) {
+                console.log('Auth status check failed:', error);
+            }
+        }
+        
+        // File upload handling
+        document.getElementById('documents').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const uploadArea = e.target.closest('.file-upload');
+                uploadArea.querySelector('p').textContent = `Selected: ${file.name}`;
+            }
+        });
+    </script>
+</body>
+</html>
